@@ -1,5 +1,8 @@
 using Microsoft.AspNetCore.Mvc;
+using ProductsInventory.Api.Data.DTOs;
+using ProductsInventory.Api.Data.Responses;
 using ProductsInventory.Api.Models;
+using ProductsInventory.Api.Models.Requests;
 using ProductsInventory.Api.Services;
 
 namespace ProductsInventory.Api.Controllers;
@@ -17,35 +20,88 @@ public class ProductsController : ControllerBase
     }
 
     [HttpPost]
-    public ActionResult CreateProduct([FromBody] Product product)
+    public async Task<IActionResult> CreateProduct([FromBody] CreateProductRequest request)
     {
-        Product newProduct = _productsService.AddProduct(product);
-        return Ok(newProduct);
+        var result = await _productsService.CreateProduct(request);
+        if (result == null)
+        {
+            return BadRequest(new ApiResponse<ProductDto>(false, "Product Creation Failed", null));
+        }
+        return CreatedAtAction(nameof(GetById), new { id = result.Id }, new ApiResponse<ProductDto>(true, "Product Created Successfully", result));
     }
 
+    // public ActionResult CreateProduct([FromBody] Product product)
+    // {
+    //     Product newProduct = _productsService.AddProduct(product);
+    //     return Ok(newProduct);
+    // }
+
+    // [HttpGet]
+    // public ActionResult GetAllProduct()
+    // {
+    //     IEnumerable<Product> products = _productsService.GetAllProduct();
+    //     return Ok(products);
+    // }
     [HttpGet]
-    public ActionResult GetAllProduct()
+    public async Task<IActionResult> GetAll()
     {
-        IEnumerable<Product> products = _productsService.GetAllProduct();
-        return Ok(products);
+        var result = await _productsService.GetAll();
+        return Ok(new ApiResponse<IEnumerable<ProductDto>>(true, "Products Fetched Successfully", result));
     }
 
+
+    // [HttpGet("{id}")]
+    // public ActionResult GetProduct(string id)
+    // {
+    //     Product newProduct = _productsService.GetProduct(id);
+    //     return Ok(newProduct);
+    // }
     [HttpGet("{id}")]
-    public ActionResult GetProduct(string id)
+    public async Task<IActionResult> GetById(Guid id)
     {
-        Product newProduct = _productsService.GetProduct(id);
-        return Ok(newProduct);
+        var result = await _productsService.GetById(id);
+        if (result == null)
+        {
+            return NotFound(new ApiResponse<ProductDto>(false, "Product Not Found", null));
+        }
+        return Ok(new ApiResponse<ProductDto>(true, "Product Fetched Successfully", result));
     }
+
+    // [HttpPut("{id}")]
+    // public ActionResult UpdateProduct(Product product, string id)
+    // {
+    //     var newProduct = await _productsService.Update(product, id);
+    //     return Ok(newProduct);
+    // }
+
+    // [HttpPut("{id}")]
+    // public async Task<IActionResult> UpdateProduct(Product product, string id)
+    // {
+    //     var newProduct = await _productsService.Update(product, id);
+    //     return Ok(newProduct);
+    // }
 
     [HttpPut("{id}")]
-    public ActionResult UpdateProduct(Product product, string id)
+    public async Task<IActionResult> UpdateProduct(Guid id,[FromBody]CreateProductRequest createProductRequest)
     {
-        Product newProduct = _productsService.UpdateProduct(product, id);
+
+        var newProduct = await _productsService.UpdateProduct(id,createProductRequest);
+        if (newProduct == null)
+        {
+            return BadRequest(new ApiResponse<ProductDto>(false, "Product Updation Failed", null));
+        }
         return Ok(newProduct);
     }
 
+    // [HttpDelete("{id}")]
+    // public ActionResult DeleteProduct(string id)
+    // {
+    //     _productsService.DeleteProduct(id);
+    //     return NoContent();
+    // }
+
     [HttpDelete("{id}")]
-    public ActionResult DeleteProduct(string id)
+    public async Task<IActionResult> DeleteProduct(Guid id)
     {
         _productsService.DeleteProduct(id);
         return NoContent();

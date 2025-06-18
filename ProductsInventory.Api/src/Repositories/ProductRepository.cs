@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using Microsoft.EntityFrameworkCore;
 using ProductsInventory.Api.Data;
 using ProductsInventory.Api.Models;
 
@@ -10,37 +11,62 @@ public class ProductsRepository : IProductsRepository
     public ApplicationDbContext _appDbContext;
     public ProductsRepository(ApplicationDbContext appDbContext)
     {
-        _appDbContext = appDbContext;   
+        _appDbContext = appDbContext;
     }
-    public Product Add(Product product)
+    public async Task<Product> Add(Product product)
     {
-        _appDbContext.Products.Add(product);
-        _appDbContext.SaveChanges();
+        await _appDbContext.Products.AddAsync(product);
+        await _appDbContext.SaveChangesAsync();
         return product;
     }
 
-    public void Delete(string id)
+    // public async void Delete(Guid id)
+    // {
+    //     var product = Get(id);
+    //     _appDbContext.Products.RemoveAsync(product);
+    //     _appDbContext.SaveChanges();
+    // }
+
+    public async void Delete(Guid id)
     {
-        var product = Get(id);
+        var product = await _appDbContext.Products.FindAsync(id);
+        if (product == null)
+        {
+            return;
+        }
         _appDbContext.Products.Remove(product);
         _appDbContext.SaveChanges();
     }
 
-    public Product Get(string id)
+    public async Task<Product> Get(Guid id)
     {
-        var product = _appDbContext.Products.Find(id);
+        var product = await _appDbContext.Products.FindAsync(id);
         return product;
     }
 
-    public List<Product> GetAll()
+    public async Task<IEnumerable<Product>> GetAll()
     {
-        return _appDbContext.Products.ToList<Product>();
+        return await _appDbContext.Products.ToListAsync<Product>();
     }
 
-    public Product Update(Product product, string id)
+    // public Product Update(Product product, Guid id)
+    // {
+    //     _appDbContext.Products.Update(product);
+    //     _appDbContext.SaveChanges();
+    //     return product;
+    // }
+
+     public async Task Update(Product product)
     {
-        _appDbContext.Products.Update(product);
-        _appDbContext.SaveChanges();
-        return product;
+        var existingProduct = await _appDbContext.Products.FindAsync(product.Id);
+        if (existingProduct is null)
+        {
+            throw new KeyNotFoundException("Product not found");
+        }
+
+        _appDbContext.Entry(existingProduct).CurrentValues.SetValues(product);
+        await _appDbContext.SaveChangesAsync();
     }
+
+   
 }
